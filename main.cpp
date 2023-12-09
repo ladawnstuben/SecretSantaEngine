@@ -1,3 +1,8 @@
+//ITCS 2530 - Final Project Group 1
+//Christian Kalaj, Zackary Sanchez, LaDawn Stuben
+//Secret Santa Gift Engine
+//Date: 12/10/2020
+
 #include <iostream>
 #include <vector>
 #include <algorithm>
