@@ -1,203 +1,226 @@
 //ITCS 2530 - Final Project Group 1
 //Christian Kalaj, Zackary Sanchez, LaDawn Stuben
 //Secret Santa Gift Engine
-//Date: 12/10/2020
+//Date: 12/15/2023
+//This program will allow the user to enter a list of participants and gifts, and then assign Secret Santas to each participant.
+//The program will also save the assignments to a file, and allow the user to view the contents of the file.
+
 
 #include <iostream>
-#include <vector>
-#include <algorithm>
-#include <ctime>
-#include <fstream>
 #include <string>
+#include <algorithm>
+#include <random>
+#include <fstream>
 
-// Define a structure for Secret Santa assignments
+const int maxSize = 100; // Maximum number of participants and gifts
+
+// Structure representing a Secret Santa assignment
 struct SecretSantaAssignment {
-    std::string participant;
-    std::string gift;
+    std::string participant; // Name of the participant
+    std::string gift;        // Assigned gift
 };
 
-// Function to save Secret Santa assignments to a file
-void saveToFile(const std::vector<SecretSantaAssignment>& assignments, int listNumber) {
-    std::ofstream outFile("SecretSantaAssignments.txt", std::ios::app);
+// Function declarations
+void displayMenu();
+void resetNames(std::string names[], int& size, const std::string& type);
+void readFromFile();
+void clearFile();
+bool is_valid_assignment(const std::string participants[], const std::string shuffledParticipants[], int size);
+void secretSanta(const std::string participants[], const std::string gifts[], int size, int& listNumber);
+void shuffleNames(std::string names[], int size, const std::string& type); // Prototype for shuffleNames
+
+
+// Saves Secret Santa assignments to a file (Zackary)
+void saveToFile(const SecretSantaAssignment assignments[], int size, int listNumber) {
+    std::ofstream outFile("SecretSantaAssignments.txt", std::ios::app); // Opens file in append mode
     if (outFile.is_open()) {
         outFile << "\nList " << listNumber << ":\n";
-        for (const auto& assignment : assignments) {
-            outFile << assignment.participant << " received: " << assignment.gift << std::endl;
+        for (int i = 0; i < size; ++i) {
+            // Writes each assignment to the file
+            outFile << assignments[i].participant << " received: " << assignments[i].gift << std::endl;
         }
         std::cout << "Secret Santa assignments saved to 'SecretSantaAssignments.txt'\n";
-        outFile.close();
+        outFile.close(); // Closes the file
     }
     else {
         std::cerr << "Error: Unable to open the file for writing.\n";
     }
 }
 
-// Function to display Secret Santa assignments
-void displayAssignments(const std::vector<SecretSantaAssignment>& assignments) {
-    // Add a blank line before displaying assignments
+// Displays the Secret Santa assignments to the console
+void displayAssignments(const SecretSantaAssignment assignments[], int size) {
     std::cout << "\n";
-
-    // Assign gifts to participants
-    for (const auto& assignment : assignments) {
-        std::cout << assignment.participant << " received: " << assignment.gift << std::endl;
+    for (int i = 0; i < size; ++i) {
+        // Prints each assignment to the console
+        std::cout << assignments[i].participant << " Received: " << assignments[i].gift << std::endl;
     }
 }
 
-// Function to read and display contents from the file
+// Reads and displays the contents of the assignment file (Zackary)
 void readFromFile() {
-    std::ifstream inFile("SecretSantaAssignments.txt");
+    std::ifstream inFile("SecretSantaAssignments.txt"); // Opens file for reading
     if (inFile.is_open()) {
         std::string line;
         std::cout << "\nContents of 'SecretSantaAssignments.txt':\n";
         while (std::getline(inFile, line)) {
+            // Reads and prints each line from the file
             std::cout << line << "\n";
         }
-        inFile.close();
+        inFile.close(); // Closes the file
     }
     else {
         std::cerr << "Error: Unable to open the file for reading.\n";
     }
 }
-
-// Function to perform Secret Santa assignment
-void secretSanta(const std::vector<std::string>& participants, std::vector<std::string>& gifts, int& listNumber) {
-    // Shuffle the participants vector to randomize the assignments
-    std::vector<SecretSantaAssignment> assignments;
-    for (size_t i = 0; i < participants.size(); ++i) {
-        SecretSantaAssignment assignment;
-        assignment.participant = participants[i];
-        assignment.gift = gifts[i];
-        assignments.push_back(assignment);
+// Function to check if the Secret Santa assignment is valid
+bool is_valid_assignment(const std::string participants[], const std::string shuffledParticipants[], int size) {
+    for (int i = 0; i < size; ++i) {
+        if (participants[i] == shuffledParticipants[i]) {
+            return false; // Invalid if a participant is assigned to themselves
+        }
     }
-
-    std::random_shuffle(assignments.begin(), assignments.end());
-
-    // Display assignments
-    displayAssignments(assignments);
-
-    // Save assignments to a file
-    saveToFile(assignments, listNumber++);
+    return true; // Valid assignment
 }
 
-// Function to randomly swap the order of gifts among participants
-void randomlySwapGifts(std::vector<std::string>& participants, std::vector<std::string>& gifts) {
-    std::random_shuffle(gifts.begin(), gifts.end());
 
-    // Display the updated list
-    for (size_t i = 0; i < participants.size(); ++i) {
-        std::cout << participants[i] << " received: " << gifts[i] << std::endl;
+// Assigns Secret Santas and manages the process (Christian, updated by LaDawn for integration)
+void secretSanta(const std::string participants[], const std::string gifts[], int size, int& listNumber) {
+    std::string shuffledParticipants[maxSize];
+    SecretSantaAssignment assignments[maxSize]; // Local assignments array
+
+    std::random_device rd; // Random device
+    std::mt19937 g(rd()); // Random number generator
+
+    // Copy participants to shuffledParticipants and shuffle
+    std::copy(participants, participants + size, shuffledParticipants);
+    std::shuffle(shuffledParticipants, shuffledParticipants + size, g);
+
+    // Assign gifts to each participant
+    for (int i = 0; i < size; ++i) {
+        int receiverIndex = (i + 1) % size; // Circular assignment
+        assignments[i].participant = shuffledParticipants[i];
+        assignments[i].gift = gifts[receiverIndex]; // Assign the gift from the next participant
+
+        std::cout << shuffledParticipants[i] << " will give a gift to " << shuffledParticipants[receiverIndex] << std::endl;
     }
 
-    // Clear the input buffer
-    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-    std::cin.clear();
+    displayAssignments(assignments, size); // Displays the shuffled assignments
+    saveToFile(assignments, size, listNumber++); // Saves the assignments to a file and increments listNumber
 }
 
-// Function to reset names (participants or gifts) with a nested loop
-void resetNames(std::vector<std::string>& names, const std::string& type) {
-    names.clear();
 
-    // Use a nested loop to ensure the user enters a valid number
+
+// Resets the names of participants or gifts (Christian, updated by LaDawn to satisy nested loop requirement)
+void resetNames(std::string names[], int& size, const std::string& type) {
+    size = 0;
+
     while (true) {
         std::cout << "Enter the number of " << type << ": ";
-        size_t numNames;
+        int numNames;
         std::cin >> numNames;
 
-        // Check if the input is a valid number
-        if (std::cin.fail() || numNames <= 0) {
-            std::cout << "Invalid input. Please enter a valid number.\n";
-
-            // Clear the input buffer to prevent an infinite loop
+        if (std::cin.fail() || numNames <= 0 || numNames > maxSize) {
+            std::cout << "Invalid input. Please enter a valid number (1 to " << maxSize << ").\n";
             std::cin.clear();
-            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            while (std::cin.get() != '\n'); // Clears the input buffer
         }
         else {
-            // Valid input, proceed with getting names
-            for (size_t i = 0; i < numNames; ++i) {
-                std::string name;
-                std::cout << "Enter " << type << " " << i + 1 << ": ";
-                std::cin >> name;
-                names.push_back(name);
+            for (int i = 0; i < numNames; ++i) {
+                std::string inputName;
+                while (true) { // Nested loop starts here
+                    std::cout << "Enter " << type << " " << i + 1 << ": ";
+                    std::cin >> inputName;
+
+                    if (!inputName.empty() && inputName.length() <= 50) { // Validate name
+                        names[i] = inputName; // Assigns name if validation passes
+                        break; // Exit the nested loop
+                    }
+                    else {
+                        std::cout << "Invalid name. Please enter a name up to 50 characters.\n";
+                    }
+                } // Nested loop ends here
             }
-            break; // Break the loop if valid input
+            size = numNames;
+            break; // Exits the loop on valid input
         }
     }
 }
 
-// Function to shuffle participants or gifts
-void shuffleNames(std::vector<std::string>& names, const std::string& type) {
-    std::random_shuffle(names.begin(), names.end());
+// Shuffles the names of participants or gifts (LaDawn)
+void shuffleNames(std::string names[], int size, const std::string& type) {
+    std::random_device rd;
+    std::mt19937 g(rd());
+    std::shuffle(names, names + size, g); // Using std::shuffle
     std::cout << type << " shuffled.\n";
 }
 
-// Function to display the menu
+// Displays the main menu (Christian)
 void displayMenu() {
     std::cout << "\nMenu:\n";
-    std::cout << "1. Add/Reset Participants\n";
-    std::cout << "2. Add/Reset Gifts\n";
+    std::cout << "1. Add Participants\n";
+    std::cout << "2. Add Gifts\n";
     std::cout << "3. Assign Secret Santas\n";
-    std::cout << "4. Read from File\n";
-    std::cout << "5. Clear File\n";
+    std::cout << "4. Display List From File\n";
+    std::cout << "5. Start Over\n";
     std::cout << "6. Quit\n";
-    std::cout << "7. Randomly Swap Gifts Among Participants\n"; // Updated option for randomly swapping gifts
     std::cout << "Enter your choice: ";
 }
 
-// Function to clear the contents of the file
+// Clears the contents of the Secret Santa assignment file (Zackary)
 void clearFile() {
-    std::ofstream outFile("SecretSantaAssignments.txt", std::ios::trunc); // Open in trunc mode to clear the file
+    std::ofstream outFile("SecretSantaAssignments.txt", std::ios::trunc); // Opens file in truncate mode
     if (outFile.is_open()) {
         std::cout << "File 'SecretSantaAssignments.txt' has been cleared.\n";
-        outFile.close();
+        outFile.close(); // Closes the file
     }
     else {
         std::cerr << "Error: Unable to open the file for writing.\n";
     }
 }
 
+
+// Main function (everyone)
 int main() {
-    // Seed the random number generator with the current time
-    std::srand(static_cast<unsigned int>(std::time(nullptr)));
+    std::string participants[maxSize]; // Array for participants
+    std::string gifts[maxSize]; // Array for gifts
+    SecretSantaAssignment assignments[maxSize]; // Array for assignments
 
-    std::vector<std::string> participants;
-    std::vector<std::string> gifts;
-
-    int listNumber = 1;
+    int participantSize = 0; // Number of participants
+    int giftSize = 0; // Number of gifts
+    int listNumber = 1; // Counter for assignment lists
 
     while (true) {
-        displayMenu();
+        displayMenu(); // Displays the main menu
 
         int choice;
         std::cin >> choice;
 
         switch (choice) {
         case 1:
-            resetNames(participants, "participants");
+            resetNames(participants, participantSize, "participants"); // Adds participants
             break;
         case 2:
-            resetNames(gifts, "gifts");
+            resetNames(gifts, giftSize, "gifts"); // Adds gifts
             break;
         case 3:
-            if (participants.size() < 2 || participants.size() != gifts.size()) {
-                std::cerr << "Error: Invalid number of participants or gifts. Please check and try again.\n";
-                break;
+            if (participantSize < 2 || participantSize != giftSize) { // Validates the number of participants and gifts
+                std::cerr << "Oops! You must have an equal number of participants and gifts, and at least two participants.\n";
             }
-            secretSanta(participants, gifts, listNumber);
+            else {
+                secretSanta(participants, gifts, participantSize, listNumber); // Assigns Secret Santas
+            }
             break;
         case 4:
-            readFromFile(); // Added option to read from file
+            readFromFile(); // Outputs list from file
             break;
         case 5:
-            clearFile();
+            clearFile(); // Clears the file
             break;
         case 6:
-            std::cout << "Exiting program.\n";
-            return 0;
-        case 7:
-            randomlySwapGifts(participants, gifts);
-            break;
+            std::cout << "Happy Holidays!\n";
+            return 0; // Exits the program
         default:
-            std::cerr << "Error: Invalid choice. Please enter a valid option.\n";
+            std::cerr << "Invalid option. Please enter a valid choice.\n";
         }
     }
 
