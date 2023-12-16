@@ -181,6 +181,21 @@ void clearFile() {
 
 // Main function (everyone)
 int main() {
+    // Display welcome message (LaDawn)
+    // ASCII art from https://ascii.co.uk/art/santa
+    std::cout << "  |_|\n";
+    std::cout << "  (>)\n";
+    std::cout << " (':')\n";
+    std::cout << " ( : )\n";
+        std::cout << "========================================\n";
+        std::cout << "  Welcome to the Secret Santa Generator!\n";
+        std::cout << "========================================\n";
+        std::cout << "This program helps you organize a fun and exciting Secret Santa event.\n";
+        std::cout << "You can add participants, assign Secret Santas, and manage gifts.\n";
+        std::cout << "Let's get started with organizing your Secret Santa!\n";
+        std::cout << "To begin, choose an option from the menu below:\n";
+
+    
     std::string participants[maxSize]; // Array for participants
     std::string gifts[maxSize]; // Array for gifts
     SecretSantaAssignment assignments[maxSize]; // Array for assignments
